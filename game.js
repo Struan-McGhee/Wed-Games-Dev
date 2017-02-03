@@ -4,7 +4,6 @@ var game = new Phaser.Game(800, 600, Phaser.AUTO, 'game', { preload: preload, cr
 var player;
 var cursors;
 var rockets;
-var star;
 var platforms;
 var bar; // health bar
 var lifeMax = 1000;
@@ -16,7 +15,6 @@ var gameOver; // text
 var restartText;
 var timer;
 var loopRocket;
-var loopStar;
 var highScore = 0;
 var highScoreText;
 var counter = 1; // related to the number of rockets that appear
@@ -26,7 +24,6 @@ function preload() { // one of the three phaser main function
 
     game.load.image('bg', 'assets/bg.jpg'); //background
     game.load.image('ground', 'assets/ground.jpg');
-    game.load.image('star', 'assets/star.png');
     game.load.image('bar', 'assets/bar.png');
     game.load.spritesheet('yoshi', 'assets/yoshi.png', 36, 34);
     game.load.spritesheet('bill', 'assets/bill.png', 28, 20);
@@ -42,21 +39,8 @@ function createPlayer() {
     player.body.gravity.y = 300; // the highest the number is the fastest our player will fall down
     player.body.collideWorldBounds = true;
 
-    /* player.animations.add('left', [3, 4], 10, true); */
     player.animations.add('right', [0, 1], 10, true);
     player.animations.add('up', [2], 10, true); // jump animation
-    /* player.animations.add('down', [5], 10, true); */
-}
-
-function createStar(){
-    //create a star at 10px from the top and at a random position between the right border and 200px from the left
-    star = stars.create(game.rnd.integerInRange(200, game.world.width), 10, 'star');
-    game.physics.arcade.enable(stars);
-
-    star.body.velocity.y = 100;
-    star.body.gravity.y = 200;
-    star.body.gravity.x = -30; // the star will move from the right to the left
-    star.body.bounce.set(0.75); // the star will bounce to 0.75% of its original maximum height
 }
 
 function createRocket(){
@@ -81,11 +65,6 @@ function createLoopRocket(){
     loopRocket = game.time.events.loop(Phaser.Timer.SECOND, createRocket, this);
 }
 
-function createLoopStar(){
-    // create a loop sending a star every 8 seconds
-	loopStar = game.time.events.loop(Phaser.Timer.SECOND*8, createStar, this);
-}
-
 function collideRocket (player, rocket) { // when the player collide a rocket ...
     rocket.kill();   // destroy the rocket
 
@@ -94,19 +73,6 @@ function collideRocket (player, rocket) { // when the player collide a rocket ..
     scaleBarX = (0.002 * currentLife);
     healthbar = bar.create(0, game.world.height - 36, 'bar'); // recreate the healthbar
     healthbar.scale.setTo(scaleBarX, 1); // we give it the right width
-}
-
-function collideStar (player, star) { // similar to the above
-    star.kill();
-
-    healthbar.kill();
-    currentLife += 300; // add some life
-    if (currentLife > lifeMax){ // check if the life is over the maximum
-        currentLife = lifeMax;
-    }
-    scaleBarX = (0.002 * currentLife);
-    healthbar = bar.create(0, game.world.height - 36, 'bar');
-    healthbar.scale.setTo(scaleBarX, 1);
 }
 
 function updateScore(){
@@ -149,9 +115,6 @@ function create() { // one of the three phaser main function
     rockets = game.add.group();
     rockets.enableBody = true;
 
-    stars = game.add.group();
-    stars.enableBody = true;
-
     //  The score
     scoreText = game.add.text(16, 520, 'Time : 0s', { fontSize: '32px', fill: '#000' });
     highScoreText = game.add.text(500, 520, 'Best : 0s', { fontSize: '32px', fill: '#000' });
@@ -174,7 +137,6 @@ function update(){   // one of the three phaser main function
             createLoopRocket();
             createTimer();
             createPlayer();
-            createLoopStar();
             removeText();
         }
     }
@@ -186,55 +148,23 @@ function update(){   // one of the three phaser main function
         counter ++;
     }
 
-    //  Collide the player and the stars with the platforms
+    //  Collide the player with the platforms
     game.physics.arcade.collide(player, platforms);
-    game.physics.arcade.collide(stars, platforms);
 
-    //  Checks to see if the player overlaps with any of the rockets or the stars and if so calls the collide function
+    //  Checks to see if the player overlaps with any of the rockets and if so calls the collide function
     game.physics.arcade.overlap(player, rockets, collideRocket, null, this);
-    game.physics.arcade.overlap(player, stars, collideStar, null, this);
 
     if (start == 1){ // when the game start and during all the game
 
         // Move the background
         bg.tilePosition.x -= (score + 40)/40; // accelerate with the time
-
-        /* if (cursors.left.isDown) // as long as the left key is pressed
-        {
-            //  Move to the left
-            player.body.velocity.x = -150;
-
-            player.animations.play('left');
-        }
-        else if (cursors.right.isDown) // as long as the right key is pressed
-        {
-            //  Move to the right
-            player.body.velocity.x = 150;
-
-            player.animations.play('right');
-        } 
-        else
-        {
-            player.body.velocity.x = 0; //  Reset the players velocity (movement)
-        } */
-
-
         
         if (cursors.up.isDown) // allow to jump
         {
             player.body.velocity.y = -200;
 
             player.animations.play('up');
-        } 
-        /* else if (cursors.down.isDown) // allow to bend down (or to fall faster when in the air)
-        {
-            player.animations.play('down');
-            player.body.velocity.y = 250;
         }
-        else if (cursors.left.isDown)
-        {
-            player.animations.play('left');
-        } */
         else 
         {
             player.animations.play('right');
@@ -243,12 +173,10 @@ function update(){   // one of the three phaser main function
 
     if (currentLife <= 0){ // when life is over
         rockets.removeAll();
-        stars.removeAll();
         healthbar.kill();
         player.kill();
         game.time.events.remove(timer); // stop the timer
         game.time.events.remove(loopRocket); // stop the rocket loop
-        game.time.events.remove(loopStar);
         counter = 1; // reset the counter
         gameOver.text = 'Game Over, your score is ' + score + ' s';
         restartText.text = 'Press Down to try again';
@@ -263,7 +191,6 @@ function update(){   // one of the three phaser main function
             score = 0; // reset the score
             createLoopRocket(); // restart the rocket loop
             createTimer(); // restart the timer
-            createLoopStar();
             currentLife = lifeMax;
             scaleBarX = (0.002 * currentLife);
             healthbar = bar.create(0, game.world.height - 36, 'bar');
