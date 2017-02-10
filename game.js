@@ -2,7 +2,10 @@
 var game = new Phaser.Game(800, 600, Phaser.AUTO, 'game', { preload: preload, create: create, update: update });
 
 var player;
+var bullets;
+var bulletTime = 0;
 var cursors;
+var fireButton;
 var rockets;
 var platforms;
 var bar; // health bar
@@ -18,13 +21,14 @@ var loopRocket;
 var highScore = 0;
 var highScoreText;
 var counter = 1; // related to the number of rockets that appear
-var start = 0; // 0 means the game hasn't started yet
+var start = 0; // 0 means the game isn't started yet
 
 function preload() { // one of the three phaser main function
 
     game.load.image('bg', 'assets/bg.jpg'); //background
     game.load.image('ground', 'assets/ground.jpg');
     game.load.image('bar', 'assets/bar.png');
+    game.load.image('bullet','assets/bullet.png');
     game.load.spritesheet('yoshi', 'assets/yoshi.png', 36, 34);
     game.load.spritesheet('bill', 'assets/bill.png', 28, 20);
 
@@ -75,6 +79,17 @@ function collideRocket (player, rocket) { // when the player collide a rocket ..
     healthbar.scale.setTo(scaleBarX, 1); // we give it the right width
 }
 
+function collisionHandler (bullet, rocket) {
+
+    //  When a bullet hits a rocket we kill them both
+    bullet.kill();
+    rocket.kill();
+
+    //  Increase the score
+    score += 20;
+    scoreText.text = 'Time : ' + score + 's'; // rewrite the text
+}
+
 function updateScore(){
     score += 1;
     scoreText.text = 'Time : ' + score + 's'; // rewrite the text
@@ -83,6 +98,25 @@ function updateScore(){
 function removeText() {
     gameOver.text = '';
     restartText.text = '';
+
+}
+
+function fireBullet () {
+
+    //  To avoid them being allowed to fire too fast we set a time limit
+    if (game.time.now > bulletTime)
+    {
+        //  Grab the first bullet we can from the pool
+        bullet = bullets.getFirstExists(false);
+
+        if (bullet)
+        {
+            //  And fire it
+            bullet.reset(player.x + 20, player.y + 20);
+            bullet.body.velocity.x = 400;
+            bulletTime = game.time.now + 200;
+        }
+    }
 
 }
 
@@ -99,6 +133,12 @@ function create() { // one of the three phaser main function
 
     //  We will enable physics for any object that is created in this group
     platforms.enableBody = true;
+
+    bullets = game.add.group();
+    bullets.enableBody = true;
+    bullets.createMultiple(30, 'bullet');
+    bullets.setAll('checkWorldBounds', true);
+    bullets.setAll('outOfBoundsKill', true); // kill if outside the bounds of game
 
     // Here we create the ground.
     var ground = platforms.create(0, game.world.height - 95, 'ground');
@@ -121,6 +161,7 @@ function create() { // one of the three phaser main function
 
     //  Our controls.
     cursors = game.input.keyboard.createCursorKeys();
+    fireButton = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
 
     // Texts displayed at the end
     gameOver = game.add.text(150, 106, '', {fontSize: '50px', fill: '#fff'});
@@ -154,10 +195,12 @@ function update(){   // one of the three phaser main function
     //  Checks to see if the player overlaps with any of the rockets and if so calls the collide function
     game.physics.arcade.overlap(player, rockets, collideRocket, null, this);
 
+    game.physics.arcade.overlap(bullets, rockets, collisionHandler, null, this);
+
     if (start == 1){ // when the game start and during all the game
 
         // Move the background
-        bg.tilePosition.x -= (score + 40)/40; // accelerate with the time
+        bg.tilePosition.x -= (score + 200) / 200; // accelerate with the time
         
         if (cursors.up.isDown) // allow to jump
         {
@@ -168,6 +211,11 @@ function update(){   // one of the three phaser main function
         else 
         {
             player.animations.play('right');
+        }
+
+        if (fireButton.isDown)
+        {
+            fireBullet();
         }
     }
 
@@ -197,5 +245,4 @@ function update(){   // one of the three phaser main function
             healthbar.scale.setTo(scaleBarX, 1);
         }
     }
-
 }
