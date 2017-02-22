@@ -173,7 +173,7 @@ function create() { // one of the three phaser main function
 
     // Texts displayed at the end
     gameOver = game.add.text(150, 106, '', {fontSize: '50px', fill: '#fff'});
-    restartText = game.add.text(150, 350, 'Press Down to start', {fontSize: '25px', fill: '#fff'});
+    restartText = game.add.text(150, 320, 'Press Up to jump\nPress Space to shoot\nPress Down to start', {fontSize: '25px', fill: '#fff'});
 
     
 }
