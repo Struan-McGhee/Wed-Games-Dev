@@ -4,6 +4,8 @@ var game = new Phaser.Game(800, 600, Phaser.AUTO, 'game', { preload: preload, cr
 var player;
 var bullets;
 var bulletTime = 0;
+var ammunition = 10;
+var ammunitionText;
 var cursors;
 var fireButton;
 var rockets;
@@ -87,12 +89,12 @@ function collisionHandler (bullet, rocket) {
 
     //  Increase the score
     score += 20;
-    scoreText.text = 'Time : ' + score + 's'; // rewrite the text
+    scoreText.text = 'Score : ' + score; // rewrite the text
 }
 
 function updateScore(){
     score += 1;
-    scoreText.text = 'Time : ' + score + 's'; // rewrite the text
+    scoreText.text = 'Score : ' + score; // rewrite the text
 }
 
 function removeText() {
@@ -111,13 +113,17 @@ function fireBullet () {
 
         if (bullet)
         {
-            //  And fire it
-            bullet.reset(player.x + 20, player.y + 20);
-            bullet.body.velocity.x = 400;
-            bulletTime = game.time.now + 200;
+            if (ammunition > 0){
+                //  And fire it
+                bullet.reset(player.x + 20, player.y + 20);
+                bullet.body.velocity.x = 400;
+                bulletTime = game.time.now + 200;
+
+                ammunition--; // decrease ammunition
+                ammunitionText.text = 'Ammunition : ' + ammunition; // update ammunition text
+            }
         }
     }
-
 }
 
 function create() { // one of the three phaser main function
@@ -156,8 +162,10 @@ function create() { // one of the three phaser main function
     rockets.enableBody = true;
 
     //  The score
-    scoreText = game.add.text(16, 520, 'Time : 0s', { fontSize: '32px', fill: '#000' });
-    highScoreText = game.add.text(500, 520, 'Best : 0s', { fontSize: '32px', fill: '#000' });
+    scoreText = game.add.text(20, 520, 'Score : 0', { fontSize: '32px', fill: '#000' });
+    highScoreText = game.add.text(600, 520, 'Best : 0', { fontSize: '32px', fill: '#000' });
+
+    ammunitionText = game.add.text(260, 520, 'Ammunition : ' + ammunition, { fontSize: '32px', fill: '#000' });
 
     //  Our controls.
     cursors = game.input.keyboard.createCursorKeys();
@@ -165,7 +173,7 @@ function create() { // one of the three phaser main function
 
     // Texts displayed at the end
     gameOver = game.add.text(150, 106, '', {fontSize: '50px', fill: '#fff'});
-    restartText = game.add.text(100, 350, 'Press Down to start', {fontSize: '25px', fill: '#fff'});
+    restartText = game.add.text(150, 350, 'Press Down to start', {fontSize: '25px', fill: '#fff'});
 
     
 }
@@ -185,7 +193,7 @@ function update(){   // one of the three phaser main function
     if (score == 3 * counter){ // every three seconds
         game.time.events.remove(loopRocket); // remove the rocket loop
         // we create another loop sending more rockets than previously
-        loopRocket = game.time.events.loop(Phaser.Timer.SECOND / ((counter + 5) / 5), createRocket, this);
+        loopRocket = game.time.events.loop(Phaser.Timer.SECOND / ((counter + 3) / 3), createRocket, this);
         counter ++;
     }
 
@@ -200,7 +208,7 @@ function update(){   // one of the three phaser main function
     if (start == 1){ // when the game start and during all the game
 
         // Move the background
-        bg.tilePosition.x -= (score + 200) / 200; // accelerate with the time
+        bg.tilePosition.x -= (score + 100) / 100; // accelerate with the time
         
         if (cursors.up.isDown) // allow to jump
         {
@@ -226,11 +234,11 @@ function update(){   // one of the three phaser main function
         game.time.events.remove(timer); // stop the timer
         game.time.events.remove(loopRocket); // stop the rocket loop
         counter = 1; // reset the counter
-        gameOver.text = 'Game Over, your score is ' + score + ' s';
+        gameOver.text = 'Game Over, your score is ' + score;
         restartText.text = 'Press Down to try again';
         if (score > highScore){
             highScore = score;
-            highScoreText.text = 'Best : ' + highScore + 's';
+            highScoreText.text = 'Score : ' + highScore;
         }
         if (cursors.down.isDown) // restart the game
         {
