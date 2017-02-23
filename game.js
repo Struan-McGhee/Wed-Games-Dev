@@ -28,18 +28,18 @@ var start = 0; // 0 means the game isn't started yet
 
 function preload() { // one of the three phaser main function
 
-    game.load.image('bg', 'assets/bg.jpg'); //background
+    game.load.image('bg', 'assets/robot/bg.png'); // background
     game.load.image('ground', 'assets/ground.jpg');
     game.load.image('bar', 'assets/bar.png');
     game.load.image('bullet','assets/bullet.png');
     game.load.image('reload', 'assets/star.png');
-    game.load.spritesheet('yoshi', 'assets/yoshi.png', 36, 34);
-    game.load.spritesheet('bill', 'assets/bill.png', 28, 20);
+    game.load.spritesheet('player', 'assets/robot/player.png', 79, 73);
+    game.load.spritesheet('enemy', 'assets/robot/enemy.png', 97, 40);
 
 }
 
 function createPlayer() {
-    player = game.add.sprite(120, game.world.height - 150, 'yoshi');
+    player = game.add.sprite(120, game.world.height - 250, 'player');
 
     //  We need to enable physics on the player
     game.physics.arcade.enable(player);
@@ -47,20 +47,20 @@ function createPlayer() {
     player.body.gravity.y = 350; // the highest the number is the fastest our player will fall down
     player.body.collideWorldBounds = true;
 
-    player.animations.add('right', [0, 1], 10, true);
-    player.animations.add('up', [2], 10, true); // jump animation
+    /* player.animations.add('right', [0, 1], 10, true);
+    player.animations.add('up', [2], 10, true); // jump animation */
 }
 
 function createRocket(){
     // create a rocket at the right border and at a random height between 0 (the top) and the game height - 100px (the ground height)
-    rocket = rockets.create(790, game.rnd.integerInRange(0, game.world.height - 100), 'bill');
+    rocket = rockets.create(790, game.rnd.integerInRange(0, game.world.height - 120), 'enemy');
     game.physics.arcade.enable(rocket);
 
     // give the rocket a random speed
     rocket.body.velocity.x = game.rnd.integerInRange(-300, -50);
 
-    rocket.animations.add('bill', [0, 1], 10, true);
-    rocket.animations.play('bill');
+    /* rocket.animations.add('enemy', [0, 1], 10, true);
+    rocket.animations.play('enemy'); */
 }
 
 function createReload(){
@@ -87,12 +87,12 @@ function createLoopReload(){
 }
 
 function collideRocket (player, rocket) { // when the player collide a rocket ...
-    rocket.kill();   // destroy the rocket
+    rocket.kill();   // destroy rocket
 
-    healthbar.kill(); // destroy the healthbar
+    healthbar.kill(); // destroy healthbar
     currentLife -= 200; // remove some life
     scaleBarX = (0.002 * currentLife);
-    healthbar = bar.create(0, game.world.height - 36, 'bar'); // recreate the healthbar
+    healthbar = bar.create(0, game.world.height - 36, 'bar'); // recreate healthbar
     healthbar.scale.setTo(scaleBarX, 1); // we give it the right width
 }
 
@@ -110,12 +110,12 @@ function collisionHandler (bullet, rocket) {
 
     //  Increase the score
     score += 20;
-    scoreText.text = 'Score : ' + score; // rewrite the text
+    scoreText.text = 'Score : ' + score; // rewrite text
 }
 
 function updateScore(){
     score += 1;
-    scoreText.text = 'Score : ' + score; // rewrite the text
+    scoreText.text = 'Score : ' + score;
 }
 
 function removeText() {
@@ -136,7 +136,7 @@ function fireBullet () {
         {
             if (ammunition > 0){
                 //  And fire it
-                bullet.reset(player.x + 20, player.y + 20);
+                bullet.reset(player.x + 20, player.y + 25);
                 bullet.body.velocity.x = 400;
                 bulletTime = game.time.now + 200;
 
@@ -167,8 +167,8 @@ function create() { // one of the three phaser main function
     bullets.setAll('checkWorldBounds', true);
     bullets.setAll('outOfBoundsKill', true); // kill if outside the bounds of game
 
-    // Here we create the ground.
-    var ground = platforms.create(0, game.world.height - 95, 'ground');
+    // Here we create the ground
+    var ground = platforms.create(0, game.world.height - 83, 'ground');
 
     //  This stops it from falling away when you jump on it
     ground.body.immovable = true;
@@ -186,12 +186,12 @@ function create() { // one of the three phaser main function
     reloads.enableBody = true;
 
     //  The score
-    scoreText = game.add.text(20, 520, 'Score : 0', { fontSize: '32px', fill: '#000' });
-    highScoreText = game.add.text(600, 520, 'Best : 0', { fontSize: '32px', fill: '#000' });
+    scoreText = game.add.text(20, 525, 'Score : 0', { fontSize: '32px', fill: '#000' });
+    highScoreText = game.add.text(600, 525, 'Best : 0', { fontSize: '32px', fill: '#000' });
 
-    ammunitionText = game.add.text(260, 520, 'Ammunition : ' + ammunition, { fontSize: '32px', fill: '#000' });
+    ammunitionText = game.add.text(260, 525, 'Ammunition : ' + ammunition, { fontSize: '32px', fill: '#000' });
 
-    //  Our controls.
+    //  Our controls
     cursors = game.input.keyboard.createCursorKeys();
     fireButton = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
 
@@ -216,14 +216,15 @@ function update(){   // one of the three phaser main function
     }
 
     if (score == 3 * counter){ // every three seconds
-        game.time.events.remove(loopRocket); // remove the rocket loop
+        game.time.events.remove(loopRocket); // remove rocket loop
         // we create another loop sending more rockets than previously
-        loopRocket = game.time.events.loop(Phaser.Timer.SECOND / ((counter + 3) / 3), createRocket, this);
+        loopRocket = game.time.events.loop(Phaser.Timer.SECOND / ((counter + 4) / 4), createRocket, this);
         counter ++;
     }
 
     //  Collide the player with the platforms
     game.physics.arcade.collide(player, platforms);
+
     game.physics.arcade.collide(reloads, platforms);
 
     //  Checks to see if the player overlaps with any of the rockets and if so calls the collide function
@@ -235,8 +236,8 @@ function update(){   // one of the three phaser main function
 
     if (start == 1){ // when the game start and during all the game
 
-        // Move the background
-        bg.tilePosition.x -= (score + 150) / 150; // accelerate with the time
+        // Move background
+        bg.tilePosition.x -= (score + 150) / 150; // accelerate with time
         
         if (cursors.up.isDown) // allow to jump
         {
@@ -260,8 +261,8 @@ function update(){   // one of the three phaser main function
         reloads.removeAll();
         healthbar.kill();
         player.kill();
-        game.time.events.remove(timer); // stop the timer
-        game.time.events.remove(loopRocket); // stop the rocket loop
+        game.time.events.remove(timer); // stop timer
+        game.time.events.remove(loopRocket); // stop rocket loop
         game.time.events.remove(loopReload);
         counter = 1; // reset the counter
         gameOver.text = 'Game Over, your score is ' + score;
@@ -270,16 +271,16 @@ function update(){   // one of the three phaser main function
             highScore = score;
             highScoreText.text = 'Score : ' + highScore;
         }
-        if (cursors.down.isDown) // restart the game
+        if (cursors.down.isDown) // restart game
         {
-            score = 0; // reset the score
+            score = 0; // reset score
             ammunition = 10; // reset ammunition
             ammunitionText.text = 'Ammunition : ' + ammunition; // update ammunition text
             removeText();
             createPlayer();
-            createLoopRocket(); // restart the rocket loop
+            createLoopRocket(); // restart rocket loop
             createLoopReload();
-            createTimer(); // restart the timer
+            createTimer(); // restart timer
             currentLife = lifeMax;
             scaleBarX = (0.002 * currentLife);
             healthbar = bar.create(0, game.world.height - 36, 'bar');
