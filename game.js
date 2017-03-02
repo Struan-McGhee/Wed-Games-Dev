@@ -15,14 +15,13 @@ var bar; // health bar
 var lifeMax = 1000;
 var currentLife = lifeMax;
 var scaleBarX = 2; // factor to extend the bar
+var time = 0;
 var score = 0;
 var scoreText;
 var gameOver; // text
 var restartText;
 var timer;
 var loopRocket;
-var highScore = 0;
-var highScoreText;
 var counter = 1; // related to the number of rockets that appear
 var start = 0; // 0 means the game isn't started yet
 
@@ -116,6 +115,7 @@ function collisionHandler (bullet, rocket) {
 function updateScore(){
     score += 1;
     scoreText.text = 'Score : ' + score;
+    time +=1;
 }
 
 function removeText() {
@@ -187,7 +187,6 @@ function create() { // one of the three phaser main function
 
     //  The score
     scoreText = game.add.text(20, 525, 'Score : 0', { fontSize: '32px', fill: '#000' });
-    highScoreText = game.add.text(600, 525, 'Best : 0', { fontSize: '32px', fill: '#000' });
 
     ammunitionText = game.add.text(260, 525, 'Ammunition : ' + ammunition, { fontSize: '32px', fill: '#000' });
 
@@ -215,10 +214,10 @@ function update(){   // one of the three phaser main function
         }
     }
 
-    if (score == 3 * counter){ // every three seconds
+    if (time == 3 * counter){ // every three seconds
         game.time.events.remove(loopRocket); // remove rocket loop
         // we create another loop sending more rockets than previously
-        loopRocket = game.time.events.loop(Phaser.Timer.SECOND / ((counter + 4) / 4), createRocket, this);
+        loopRocket = game.time.events.loop(Phaser.Timer.SECOND / ((counter + 5) / 10), createRocket, this);
         counter ++;
     }
 
@@ -257,6 +256,7 @@ function update(){   // one of the three phaser main function
     }
 
     if (currentLife <= 0){ // when life is over
+        start = 0;
         rockets.removeAll();
         reloads.removeAll();
         healthbar.kill();
@@ -267,20 +267,13 @@ function update(){   // one of the three phaser main function
         counter = 1; // reset the counter
         gameOver.text = 'Game Over, your score is ' + score;
         restartText.text = 'Press Down to play again';
-        if (score > highScore){
-            highScore = score;
-            highScoreText.text = 'Score : ' + highScore;
-        }
+
         if (cursors.down.isDown) // restart game
         {
             score = 0; // reset score
+            time = 0;
             ammunition = 10; // reset ammunition
             ammunitionText.text = 'Ammunition : ' + ammunition; // update ammunition text
-            removeText();
-            createPlayer();
-            createLoopRocket(); // restart rocket loop
-            createLoopReload();
-            createTimer(); // restart timer
             currentLife = lifeMax;
             scaleBarX = (0.002 * currentLife);
             healthbar = bar.create(0, game.world.height - 36, 'bar');

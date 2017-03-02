@@ -1,0 +1,9 @@
+#game{
+    display: inline-block;
+
+}
+
+#form{
+    float: left;
+    width: 300px;
+}

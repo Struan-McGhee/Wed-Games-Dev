@@ -3,10 +3,64 @@
 <head>
 	<title>game</title>
 	<meta charset = "UTF-8">
+    <link rel="stylesheet" href="style.css">
+    <script type="text/javascript" src="jquery.min.js"></script>
 	<script type="text/javascript" src="phaser.min.js"></script>
 	<script type="text/javascript" src="game.js"></script>
+    <script>
+        $(document).ready(function(){
+
+            var send = 0;
+            var name = '';
+            var insert_score;
+            var interval;
+
+            $('#score').load('print.php');
+
+            setInterval(function(){
+                $('#score').load('print.php');
+
+                if (start == 1){
+                    $('#submit').css("visibility", "visible");
+                    interval = setInterval(function () {
+                        if (start == 0){
+                            send = 1;
+                        } else {
+                            send = 0;
+                        }
+                    }, 1000);
+                }
+            }, 1000);
+
+            $('#submit').click(function(){
+                if (send == 1){
+                    name = $('#name').val();
+                    insert_score = score;
+                    $.ajax({
+                        type: 'GET',
+                        url: 'insert.php',
+                        timeout: 3000,
+                        data: 'name=' + name + '&score=' + insert_score
+                    });
+                    $('#submit').css("visibility", "hidden");
+                    alert('Your score have been saved ! Try again to be part of the best players !!!');
+                } else {
+                    alert ('Please wait the end of the game to save your score.');
+                }
+            });
+
+        });
+    </script>
 </head>
 <body>
-	<div id="game"></div> <!-- Where the game is taking place -->
+    <div id="game"></div> <!-- Where the game is taking place -->
+    <div id="form">
+        <h2>High Scores :</h2>
+	    <div id="score"></div>
+        <h3>Save your score at the end :</h3>
+        <label for="name">Name : </label>
+        <input type="text" id="name" />
+        <input type="submit" id="submit" value="Submit" />
+    </div>
 </body>
 </html>
