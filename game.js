@@ -7,6 +7,7 @@ var bulletTime = 0;
 var ammunition = 10;
 var ammunitionText;
 var reload;
+var health;
 var cursors;
 var fireButton;
 var rockets;
@@ -28,10 +29,15 @@ var start = 0; // 0 means the game isn't started yet
 function preload() { // one of the three phaser main function
 
     game.load.image('bg', 'assets/robot/bg.png'); // background
+    game.load.image('bg2', 'assets/robot/bg2.png');
+    game.load.image('bg3', 'assets/robot/bg3.png');
+    game.load.image('bg4', 'assets/robot/bg4.png');
+    game.load.image('bg5', 'assets/robot/bg5.png');
     game.load.image('ground', 'assets/ground.jpg');
     game.load.image('bar', 'assets/bar.png');
     game.load.image('bullet','assets/bullet.png');
-    game.load.image('reload', 'assets/star.png');
+    game.load.image('reload', 'assets/robot/ammo.png');
+    game.load.image('health', 'assets/robot/health.png');
     game.load.spritesheet('player', 'assets/robot/player.png', 79, 73);
     game.load.spritesheet('enemy', 'assets/robot/enemy.png', 97, 40);
 
@@ -71,6 +77,15 @@ function createReload(){
     reload.body.bounce.set(0.75);
 }
 
+function createHealth(){
+    health = healths.create(game.rnd.integerInRange(200, game.world.width), 10, 'health');
+    game.physics.arcade.enable(healths);
+    health.body.velocity.y = 100;
+    health.body.gravity.y = 200;
+    health.body.gravity.x = -30;
+    health.body.bounce.set(0.75);
+}
+
 function createTimer(){
     // create a loop calling the function updateScore() every second
     timer = game.time.events.loop(Phaser.Timer.SECOND, updateScore, this);
@@ -83,6 +98,10 @@ function createLoopRocket(){
 
 function createLoopReload(){
     loopReload = game.time.events.loop(Phaser.Timer.SECOND*8, createReload, this);
+}
+
+function createLoopHealth(){
+    loopHealth = game.time.events.loop(Phaser.Timer.SECOND*14, createHealth, this);
 }
 
 function collideRocket (player, rocket) { // when the player collide a rocket ...
@@ -101,6 +120,16 @@ function collideReload (player, reload) {
     ammunitionText.text = 'Ammunition : ' + ammunition; // update ammunition text
 }
 
+function collideHealth (player, health) {
+    health.kill();
+    healthbar.kill();
+    currentLife += 200; // give some life back
+    scaleBarX = (0.002 * currentLife);
+    healthbar = bar.create(0, game.world.height - 36, 'bar'); // recreate healthbar
+    healthbar.scale.setTo(scaleBarX, 1); // we give it the right width
+}
+
+
 function collisionHandler (bullet, rocket) {
 
     //  When a bullet hits a rocket we kill them both
@@ -108,7 +137,7 @@ function collisionHandler (bullet, rocket) {
     rocket.kill();
 
     //  Increase the score
-    score += 20;
+    score += 10;
     scoreText.text = 'Score : ' + score; // rewrite text
 }
 
@@ -152,8 +181,20 @@ function create() { // one of the three phaser main function
     //  We're going to be using physics, so enable the Arcade Physics system
     game.physics.startSystem(Phaser.Physics.ARCADE);
 
-    //  A simple background for our game
+    //  Load backgrounds
     bg = game.add.tileSprite(0, 0, 800, 600, 'bg');
+
+    bg2 = game.add.tileSprite(0, 0, 800, 600, 'bg2');
+    bg2.alpha = 0; // set the transparency to 0
+
+    bg3 = game.add.tileSprite(0, 0, 800, 600, 'bg3');
+    bg3.alpha = 0;
+
+    bg4 = game.add.tileSprite(0, 0, 800, 600, 'bg4');
+    bg4.alpha = 0;
+
+    bg5 = game.add.tileSprite(0, 0, 800, 600, 'bg5');
+    bg5.alpha = 0;
 
     //  The platforms group contains the ground
     platforms = game.add.group();
@@ -185,6 +226,9 @@ function create() { // one of the three phaser main function
     reloads = game.add.group();
     reloads.enableBody = true;
 
+    healths = game.add.group();
+    healths.enableBody = true;
+
     //  The score
     scoreText = game.add.text(20, 525, 'Score : 0', { fontSize: '32px', fill: '#000' });
 
@@ -208,6 +252,7 @@ function update(){   // one of the three phaser main function
             start = 1;
             createLoopRocket();
             createLoopReload();
+            createLoopHealth();
             createTimer();
             createPlayer();
             removeText();
@@ -221,10 +266,29 @@ function update(){   // one of the three phaser main function
         counter ++;
     }
 
+    //fade in the new backgrounds
+    if (score >= 50){
+        game.add.tween(bg2).to( { alpha: 1 }, 1000, Phaser.Easing.Linear.None, true, 0, 1000, false);
+
+        if (score >= 150){
+            game.add.tween(bg3).to( { alpha: 1 }, 1000, Phaser.Easing.Linear.None, true, 0, 1000, false);
+
+            if (score >= 250){
+                game.add.tween(bg4).to( { alpha: 1 }, 1000, Phaser.Easing.Linear.None, true, 0, 1000, false);
+
+                if (score >= 400){
+                    game.add.tween(bg5).to( { alpha: 1 }, 1000, Phaser.Easing.Linear.None, true, 0, 1000, false);
+                }
+            }
+        }
+    }
+
     //  Collide the player with the platforms
     game.physics.arcade.collide(player, platforms);
 
     game.physics.arcade.collide(reloads, platforms);
+
+    game.physics.arcade.collide(healths, platforms);
 
     //  Checks to see if the player overlaps with any of the rockets and if so calls the collide function
     game.physics.arcade.overlap(player, rockets, collideRocket, null, this);
@@ -233,10 +297,16 @@ function update(){   // one of the three phaser main function
 
     game.physics.arcade.overlap(player, reloads, collideReload, null, this);
 
+    game.physics.arcade.overlap(player, healths, collideHealth, null, this);
+
     if (start == 1){ // when the game start and during all the game
 
         // Move background
         bg.tilePosition.x -= (score + 150) / 150; // accelerate with time
+        bg2.tilePosition.x -= (score + 150) / 150;
+        bg3.tilePosition.x -= (score + 150) / 150;
+        bg4.tilePosition.x -= (score + 150) / 150;
+        bg5.tilePosition.x -= (score + 150) / 150;
         
         if (cursors.up.isDown) // allow to jump
         {
@@ -259,11 +329,13 @@ function update(){   // one of the three phaser main function
         start = 0;
         rockets.removeAll();
         reloads.removeAll();
+        healths.removeAll();
         healthbar.kill();
         player.kill();
         game.time.events.remove(timer); // stop timer
         game.time.events.remove(loopRocket); // stop rocket loop
         game.time.events.remove(loopReload);
+        game.time.events.remove(loopHealth);
         counter = 1; // reset the counter
         gameOver.text = 'Game Over, your score is ' + score;
         restartText.text = 'Press Down to play again';
@@ -278,6 +350,12 @@ function update(){   // one of the three phaser main function
             scaleBarX = (0.002 * currentLife);
             healthbar = bar.create(0, game.world.height - 36, 'bar');
             healthbar.scale.setTo(scaleBarX, 1);
+            game.tweens.removeAll();
+            bg2.alpha = 0; //reset background transparency
+            bg3.alpha = 0;
+            bg4.alpha = 0;
+            bg5.alpha = 0;
+
         }
     }
 }
