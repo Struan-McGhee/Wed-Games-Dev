@@ -11,6 +11,7 @@ var health;
 var cursors;
 var fireButton;
 var rockets;
+var drills;
 var platforms;
 var bar; // health bar
 var lifeMax = 1000;
@@ -18,28 +19,40 @@ var currentLife = lifeMax;
 var scaleBarX = 2; // factor to extend the bar
 var time = 0;
 var score = 0;
+var titleText;
 var scoreText;
 var gameOver; // text
 var restartText;
+var controlsText;
+var storyText1;
+var storyText2;
+var storyText3;
 var timer;
+var loopDrill;
 var loopRocket;
+var loopHealth;
+var loopReload;
 var counter = 1; // related to the number of rockets that appear
 var start = 0; // 0 means the game isn't started yet
 
 function preload() { // one of the three phaser main function
 
-    game.load.image('bg', 'assets/robot/bg.png'); // background
-    game.load.image('bg2', 'assets/robot/bg2.png');
-    game.load.image('bg3', 'assets/robot/bg3.png');
-    game.load.image('bg4', 'assets/robot/bg4.png');
-    game.load.image('bg5', 'assets/robot/bg5.png');
+    game.load.image('bg', 'assets/bg.png'); // background
+    game.load.image('bg2', 'assets/bg2.png');
+    game.load.image('bg3', 'assets/bg3.png');
+    game.load.image('bg4', 'assets/bg4.png');
+    game.load.image('bg5', 'assets/bg5.png');
     game.load.image('ground', 'assets/ground.jpg');
     game.load.image('bar', 'assets/bar.png');
     game.load.image('bullet','assets/bullet.png');
-    game.load.image('reload', 'assets/robot/ammo.png');
-    game.load.image('health', 'assets/robot/health.png');
-    game.load.spritesheet('player', 'assets/robot/player.png', 79, 73);
-    game.load.spritesheet('enemy', 'assets/robot/enemy.png', 97, 40);
+    game.load.image('reload', 'assets/ammo.png');
+    game.load.image('health', 'assets/health.png');
+    game.load.spritesheet('player', 'assets/player.png', 79, 73);
+    game.load.spritesheet('drill', 'assets/drill.png', 97, 40);
+    game.load.spritesheet('rocket', 'assets/rocket.png', 151, 40);
+    game.load.text('part1', 'part1.txt');
+    game.load.text('part2', 'part2.txt');
+    game.load.text('part3', 'part3.txt');
 
 }
 
@@ -56,16 +69,21 @@ function createPlayer() {
     player.animations.add('up', [2], 10, true); // jump animation */
 }
 
+function createDrill(){
+    // create a drill at the right border and at the ground height
+    drill = drills.create(790, game.world.height - 122, 'drill');
+    game.physics.arcade.enable(drill);
+
+    // give the drill a random speed
+    drill.body.velocity.x = game.rnd.integerInRange(-300, -50);
+}
+
 function createRocket(){
-    // create a rocket at the right border and at a random height between 0 (the top) and the game height - 100px (the ground height)
-    rocket = rockets.create(790, game.rnd.integerInRange(0, game.world.height - 120), 'enemy');
+    // create a rocket at the right border and at a random height between 0 (the top) and the game height - 200px
+    rocket = rockets.create(790, game.rnd.integerInRange(0, game.world.height - 200), 'rocket');
     game.physics.arcade.enable(rocket);
 
-    // give the rocket a random speed
     rocket.body.velocity.x = game.rnd.integerInRange(-300, -50);
-
-    /* rocket.animations.add('enemy', [0, 1], 10, true);
-    rocket.animations.play('enemy'); */
 }
 
 function createReload(){
@@ -91,9 +109,13 @@ function createTimer(){
     timer = game.time.events.loop(Phaser.Timer.SECOND, updateScore, this);
 }
 
+function createLoopDrill(){
+    // create a loop sending one drill per second
+    loopDrill = game.time.events.loop(Phaser.Timer.SECOND, createDrill, this);
+}
+
 function createLoopRocket(){
-    // create a loop sending one rocket per second
-    loopRocket = game.time.events.loop(Phaser.Timer.SECOND, createRocket, this);
+    loopRocket = game.time.events.loop(Phaser.Timer.SECOND*2, createRocket, this);
 }
 
 function createLoopReload(){
@@ -104,14 +126,22 @@ function createLoopHealth(){
     loopHealth = game.time.events.loop(Phaser.Timer.SECOND*14, createHealth, this);
 }
 
-function collideRocket (player, rocket) { // when the player collide a rocket ...
-    rocket.kill();   // destroy rocket
-
+function collideDrill (player, drill) { // when the player collide a drill ...
+    drill.kill();   // destroy drill
     healthbar.kill(); // destroy healthbar
     currentLife -= 200; // remove some life
     scaleBarX = (0.002 * currentLife);
     healthbar = bar.create(0, game.world.height - 36, 'bar'); // recreate healthbar
     healthbar.scale.setTo(scaleBarX, 1); // we give it the right width
+}
+
+function collideRocket (player, rocket) {
+    rocket.kill();
+    healthbar.kill();
+    currentLife -= 200;
+    scaleBarX = (0.002 * currentLife);
+    healthbar = bar.create(0, game.world.height - 36, 'bar');
+    healthbar.scale.setTo(scaleBarX, 1);
 }
 
 function collideReload (player, reload) {
@@ -124,17 +154,20 @@ function collideHealth (player, health) {
     health.kill();
     healthbar.kill();
     currentLife += 200; // give some life back
+    if (currentLife > lifeMax){
+        currentLife = lifeMax;
+    }
     scaleBarX = (0.002 * currentLife);
     healthbar = bar.create(0, game.world.height - 36, 'bar'); // recreate healthbar
     healthbar.scale.setTo(scaleBarX, 1); // we give it the right width
 }
 
 
-function collisionHandler (bullet, rocket) {
+function collisionHandler (bullet, enemy) {
 
-    //  When a bullet hits a rocket we kill them both
+    //  When a bullet hits an enemy we kill them both
     bullet.kill();
-    rocket.kill();
+    enemy.kill();
 
     //  Increase the score
     score += 10;
@@ -150,6 +183,9 @@ function updateScore(){
 function removeText() {
     gameOver.text = '';
     restartText.text = '';
+    titleText.text = '';
+    storyText3.text = '';
+    controlsText.text = '';
 
 }
 
@@ -220,6 +256,9 @@ function create() { // one of the three phaser main function
 
     healthbar.scale.setTo(scaleBarX, 1);  // extend the size of the bar so it takes all the width
 
+    drills = game.add.group();
+    drills.enableBody = true;
+
     rockets = game.add.group();
     rockets.enableBody = true;
 
@@ -238,18 +277,40 @@ function create() { // one of the three phaser main function
     cursors = game.input.keyboard.createCursorKeys();
     fireButton = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
 
-    // Texts displayed at the end
-    gameOver = game.add.text(150, 106, '', {fontSize: '50px', fill: '#fff'});
-    restartText = game.add.text(150, 320, 'Press Up to jump\nPress Space to shoot\nPress Down to start', {fontSize: '25px', fill: '#fff'});
+    titleText = game.add.text(180, 20, 'Robot Runner', {font: '50px Revalia', fill: '#fff'});
+    var part1 = game.cache.getText('part1');
+    storyText1 = game.add.text(50, 150, part1, {font: '15px Revalia', fill: '#fff'});
+    var part2 = game.cache.getText('part2');
+    storyText2 = game.add.text(20, 300, part2, {font: '15px Revalia', fill: '#fff'});
+    storyText3 = game.add.text(70, 150, '', {font: '15px Revalia', fill: '#fff'});
 
-    
+    // Texts displayed at the end
+    gameOver = game.add.text(120, 200, '', {font: '30px Revalia', fill: '#fff'});
+    restartText = game.add.text(225, 450, 'Press Up to continue', {font: '25px Revalia', fill: '#fff'});
+    controlsText = game.add.text(220, 350, '', {font: '25px Revalia', fill: '#fff'});
+
+
+
 }
 
 function update(){   // one of the three phaser main function
 
-    if (start == 0){ // when the game has not started yet
-        if(cursors.down.isDown){ // we launch the game when the user press down
+    if (start === 0){ // when the game is on the first page of story
+        if(cursors.up.isDown){  // we switch to second page of story and controls
             start = 1;
+            restartText.text = '';
+            controlsText.text = '  Press Up to jump\nPress Space to shoot\n Press Down to start';
+            storyText1.text = '';
+            storyText2.text = '';
+            var part3 = game.cache.getText('part3');
+            storyText3.text = part3;
+        }
+    }
+
+    if (start === 1){ // when the game has not started yet
+        if(cursors.down.isDown){ // we launch the game when the user press down
+            start = 2;
+            createLoopDrill();
             createLoopRocket();
             createLoopReload();
             createLoopHealth();
@@ -260,9 +321,11 @@ function update(){   // one of the three phaser main function
     }
 
     if (time == 3 * counter){ // every three seconds
-        game.time.events.remove(loopRocket); // remove rocket loop
-        // we create another loop sending more rockets than previously
-        loopRocket = game.time.events.loop(Phaser.Timer.SECOND / ((counter + 5) / 10), createRocket, this);
+        game.time.events.remove(loopDrill); // remove drill loop
+        // we create another loop sending more drills than previously
+        loopDrill = game.time.events.loop(Phaser.Timer.SECOND / ((counter + 15) / 30), createDrill, this);
+        game.time.events.remove(loopRocket);
+        loopRocket = game.time.events.loop(Phaser.Timer.SECOND / ((counter + 15) / 15), createRocket, this);
         counter ++;
     }
 
@@ -290,7 +353,11 @@ function update(){   // one of the three phaser main function
 
     game.physics.arcade.collide(healths, platforms);
 
-    //  Checks to see if the player overlaps with any of the rockets and if so calls the collide function
+    //  Checks to see if the player overlaps with any of the drills and if so calls the collide function
+    game.physics.arcade.overlap(player, drills, collideDrill, null, this);
+
+    game.physics.arcade.overlap(bullets, drills, collisionHandler, null, this);
+
     game.physics.arcade.overlap(player, rockets, collideRocket, null, this);
 
     game.physics.arcade.overlap(bullets, rockets, collisionHandler, null, this);
@@ -299,7 +366,7 @@ function update(){   // one of the three phaser main function
 
     game.physics.arcade.overlap(player, healths, collideHealth, null, this);
 
-    if (start == 1){ // when the game start and during all the game
+    if (start === 2){ // when the game start and during all the game
 
         // Move background
         bg.tilePosition.x -= (score + 150) / 150; // accelerate with time
@@ -326,19 +393,21 @@ function update(){   // one of the three phaser main function
     }
 
     if (currentLife <= 0){ // when life is over
-        start = 0;
+        start = 1;
+        drills.removeAll();
         rockets.removeAll();
         reloads.removeAll();
         healths.removeAll();
         healthbar.kill();
         player.kill();
         game.time.events.remove(timer); // stop timer
-        game.time.events.remove(loopRocket); // stop rocket loop
-        game.time.events.remove(loopReload);
+        game.time.events.remove(loopDrill); // stop drill loop
+        game.time.events.remove(loopRocket);
         game.time.events.remove(loopHealth);
+        game.time.events.remove(loopReload);
         counter = 1; // reset the counter
         gameOver.text = 'Game Over, your score is ' + score;
-        restartText.text = 'Press Down to play again';
+        restartText.text = 'Press Down to retry';
 
         if (cursors.down.isDown) // restart game
         {
